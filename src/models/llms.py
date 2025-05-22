@@ -1,6 +1,8 @@
 from langchain_openai import ChatOpenAI
 from langchain_experimental.agents import create_pandas_dataframe_agent
 import pandas as pd
+from src.utils import safe_read_csv
+
 
 
 def load_llm(model_name):
@@ -38,15 +40,14 @@ def load_llm(model_name):
         )
 
 
-def create_agent_from_csv(model_name, csv_path, return_steps=False):
-    df = pd.read_csv(csv_path)
+def create_agent_from_csv(model_name: str, file_path: str, return_steps=True):
+    df = safe_read_csv(file_path) 
     llm = load_llm(model_name)
     return create_pandas_dataframe_agent(
-        llm,
-        df,
-        verbose=True,
-        handle_parsing_errors=True,
+        llm=llm,
+        df=df,
         agent_type="tool-calling",
+        return_intermediate_steps=return_steps,
         allow_dangerous_code=True,
-        return_intermediate_steps=return_steps
+        verbose=True,
     )
