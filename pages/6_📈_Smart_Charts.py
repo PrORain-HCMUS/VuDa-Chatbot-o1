@@ -6,8 +6,8 @@ from src.models.config import COLOR_THEME
 from datetime import datetime
 from src.utils import get_all_datasets, get_dataset
 
-st.set_page_config(page_title="📈 Smart Chart Suggestions", layout="wide")
-st.title("📈 Smart Chart Suggestions")
+st.set_page_config(page_title="📈 Smart Chart Builder", layout="wide")
+st.title("📈 Smart Chart Builder")
 
 llm = load_llm("gpt-3.5-turbo")
 
@@ -34,79 +34,76 @@ def load_csv(file_path):
 
 df = load_csv(file_path)
 
-# Basic info
 st.markdown(f"**🧾 Dataset Info:** `{dataset[1]}` — {df.shape[0]} rows × {df.shape[1]} columns")
 
-# Choose grouping column
-group_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
-group_col = st.selectbox("🧩 Select a grouping column (optional):", options=["None"] + group_cols)
+# Layout: Sidebar | Chart | Insights
+sidebar, chart_col, llm_col = st.columns([1, 3, 2])
 
-if group_col != "None":
-    group_values = sorted(df[group_col].dropna().unique())
-    selected_groups = st.multiselect(f"Select one or more {group_col} to visualize", group_values, default=group_values[:1])
-    filtered_df = df[df[group_col].isin(selected_groups)].copy()
-else:
-    group_col = None
-    filtered_df = df.copy()
+with sidebar:
+    st.markdown("### ⚙️ Chart Settings")
+    x_axis = st.selectbox("X-axis", options=df.columns.tolist())
+    y_axis = st.selectbox("Y-axis", options=df.select_dtypes(include=['number']).columns.tolist())
+    group_by = st.selectbox("Color By", options=["None"] + df.select_dtypes(include=['object', 'category']).columns.tolist())
+    chart_type = st.selectbox("Chart Type", options=["line", "bar", "scatter"])
+    user_prompt = st.text_area("📝 Extra LLM Instructions", placeholder="e.g., add markers, use dark theme...")
+    generate = st.button("🚀 Generate & Analyze")
 
-# Determine time/index column
-if 'Date' in df.columns:
-    filtered_df['Year'] = pd.to_datetime(filtered_df['Date'], errors='coerce').dt.year
-    x_axis = 'Year'
-elif 'Year' in df.columns:
-    x_axis = 'Year'
-else:
-    filtered_df['Index'] = filtered_df.index
-    x_axis = 'Index'
+if generate:
+    color = group_by if group_by != "None" else None
 
-# Prompt area
-st.subheader("💬 Describe the chart you want")
-prompt = st.text_area("For example: 'Compare average score by gender over years'", placeholder="Enter chart description here...")
+    with chart_col:
+        st.markdown("### 📊 Generated Chart")
+        try:
+            if chart_type == "line":
+                fig = px.line(df, x=x_axis, y=y_axis, color=color)
+            elif chart_type == "bar":
+                fig = px.bar(df, x=x_axis, y=y_axis, color=color)
+            elif chart_type == "scatter":
+                fig = px.scatter(df, x=x_axis, y=y_axis, color=color)
+            else:
+                st.warning("Unsupported chart type.")
+                fig = None
 
-if st.button("🎨 Generate Chart"):
-    if not prompt.strip():
-        st.warning("⚠️ Please enter a prompt.")
-    else:
-        with st.spinner("🧠 Analyzing prompt and generating chart..."):
-            columns = df.columns.tolist()
-            llm_prompt = f"""
-You are a Python data visualization assistant.
-You're given a DataFrame `df` with columns: {columns}.
-The user described a chart they want with the prompt: '{prompt}'.
-Generate working Plotly Express code for Streamlit using this DataFrame.
-Only return the code inside triple backticks.
-"""
-            response = llm.predict(llm_prompt)
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
+        except Exception as e:
+            st.error(f"❌ Error generating chart: {e}")
 
-            try:
-                code = response.split("```python")[-1].split("```")[0]
-                st.code(code, language="python")
-                exec_globals = {"df": df.copy(), "px": px, "st": st, "pd": pd}
-                exec(code, exec_globals)
-            except Exception as e:
-                st.error(f"❌ Error executing chart code:\n{e}")
+    with llm_col:
+        st.markdown("### 🧠 Chart Code & Insights")
+        with st.spinner("Generating chart code and insights..."):
+            prompt = f"""
+                You are a professional data analyst and visualization expert working with Python and pandas.
+                The dataset is preloaded in the DataFrame `df` and contains these columns: {df.columns.tolist()}.
 
-st.markdown("---")
-st.subheader("📊 Manual Chart Builder")
+                The user has just generated a Plotly {chart_type} chart with:
+                - X-axis: `{x_axis}`
+                - Y-axis: `{y_axis}`
+                - Color grouping: `{color}`
+                {f"- Extra request: {user_prompt.strip()}" if user_prompt.strip() else ""}
 
-numeric_columns = df.select_dtypes(include=['number']).columns.tolist()
-selected_features = st.multiselect("📈 Select one or more numeric features", numeric_columns)
+                Your tasks:
+                1. **Generate the Plotly Express code only using `df`**, do NOT redefine or reload data.
+                2. **Extract 3 meaningful insights using real values and labels from df**:
+                - Example: "Artist 'Ed Sheeran' has the highest Spotify Popularity (97) and Track Score (420)"
+                - Include comparisons, extremes, or correlations with exact numbers
+                3. **Output 5 statistics (mean, median, min, max, std)** as a **Markdown table**, broken down by `{color}` if applicable
 
-if selected_features:
-    # Convert to long-form for better plotting
-    df_melted = filtered_df.melt(id_vars=[x_axis] + ([group_col] if group_col else []),
-                                value_vars=selected_features,
-                                var_name='variable',
-                                value_name='value')
+                Respond in Markdown with:
+                - A code block for the chart
+                - A bold **Insights:** section with bullet points (no placeholders)
+                - A bold **Statistics:** section rendered as a Markdown table, like:
 
-    fig = px.line(
-        df_melted,
-        x=x_axis,
-        y='value',
-        color='variable' if not group_col else group_col,
-        line_dash='variable' if group_col else None,
-        title="Custom Chart",
-    )
-    fig.update_xaxes(title_text=x_axis, tickmode='linear')
-    fig.update_yaxes(title_text="Value")
-    st.plotly_chart(fig, use_container_width=True)
+                | Metric | Group A | Group B | Group C |
+                |--------|---------|---------|---------|
+                | Mean   | 58.2    | 63.1    | 47.9    |
+                | Median | ...     | ...     | ...     |
+
+                ⚠️ Important:
+                - Use **real values and real names** from the dataset
+                - NEVER use placeholders like "Region A" or "Artist B"
+                - Insights must be specific and data-driven
+                """
+
+            result = llm.predict(prompt)
+            st.markdown(result)
