@@ -2,12 +2,13 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-from src.utils import init_db, add_dataset, get_all_datasets, delete_dataset, rename_dataset, safe_read_csv
+from src.utils import export_eda_report_to_pdf, init_db, add_dataset, get_all_datasets, delete_dataset, rename_dataset, safe_read_csv
 from pygwalker.api.streamlit import StreamlitRenderer
 import matplotlib.pyplot as plt
 import seaborn as sns
 import json
 import textwrap
+import re
 
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage
@@ -17,6 +18,12 @@ st.title("🧠 Exploratory Data Analysis (EDA) Report")
 
 # LangChain LLM setup
 llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+
+def clean_llm_json(raw_response):
+    # Xoá markdown code block ```json hoặc ```
+    cleaned = re.sub(r"^```(?:json)?", "", raw_response.strip(), flags=re.IGNORECASE)
+    cleaned = re.sub(r"```$", "", cleaned.strip())
+    return cleaned.strip()
 
 def generate_eda_report_with_llm(df):
     prompt = f"""
@@ -53,17 +60,22 @@ Dataset Metadata Preview:
 {df.dtypes.astype(str).to_dict()}
 - Description:
 {df.describe().to_dict()}
+
+Return only valid JSON. Do not wrap it in markdown code block (no triple backticks).
 """
 
     response = llm([HumanMessage(content=prompt)]).content
 
     try:
-        report = json.loads(response)
-        return report
+        return json.loads(response)
     except json.JSONDecodeError:
-        st.error("❌ LLM response is not valid JSON. Below is the raw output:")
-        st.code(response)
-        raise
+        cleaned = clean_llm_json(response)
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError as e:
+            st.error("❌ JSON decode failed. Raw LLM output shown below:")
+            st.code(response)
+            raise e
 
 def generate_final_summary_prompt(sections):
     return textwrap.dedent("""
@@ -315,12 +327,17 @@ _{eda_sections['correlation'].get('insight_after_chart', '')}_
 """
 
     # Nút tải xuống Markdown, không hiển thị nội dung
-    st.download_button(
-        label="📥 Download Markdown Report",
-        data=full_report_md,
-        file_name=f"EDA_Report_{name}.md",
-        mime="text/markdown"
-    )
+    # st.download_button(
+    #     label="📥 Download Markdown Report",
+    #     data=full_report_md,
+    #     file_name=f"EDA_Report_{name}.md",
+    #     mime="text/markdown"
+    # )
+
+
+    # Export PDF
+    pdf_bytes = export_eda_report_to_pdf(eda_sections, df, summary_response, dataset_name=name)
+    st.download_button("📄 Download PDF Report", pdf_bytes, file_name=f"EDA_Report_{name}.pdf", mime="application/pdf")
 
 
 
