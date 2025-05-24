@@ -2,7 +2,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from src.utils import init_db, get_all_datasets, get_chart_cards_by_dataset, get_dataset, safe_read_csv, execute_plt_code
+from src.utils import init_db, get_all_datasets, get_chart_cards_by_dataset, get_dataset, safe_read_csv, execute_plt_code, delete_chart_card
 
 
 st.set_page_config(page_title="📊 Visual Summary", layout="wide")
@@ -40,7 +40,34 @@ if not cards:
 st.markdown("---")
 st.subheader("🧩 Chart-based Insights")
 
+# for i, (question, answer, code, timestamp) in enumerate(cards):
+#     with st.container():
+#         cols = st.columns([2, 3])
+
+#         with cols[0]:
+#             st.markdown(f"### 🕓 {timestamp}")
+#             st.markdown(f"❓ **Question {i+1}:** {question}")
+#             st.markdown(f"💬 **Answer:** {answer}")
+#             with st.expander("📄 View Code"):
+#                 st.code(code, language="python")
+
+#         with cols[1]:
+#             fig = execute_plt_code(code, st.session_state.df)
+#             if fig:
+#                 st.pyplot(fig)
+#             else:
+#                 st.warning("⚠️ No chart could be rendered from saved code.")
+
+
+# Ghi nhớ biểu đồ đã xoá để ẩn ngay mà không cần reload
+if "deleted_charts" not in st.session_state:
+    st.session_state.deleted_charts = set()
+
 for i, (question, answer, code, timestamp) in enumerate(cards):
+    unique_key = f"{question}-{timestamp}"
+    if unique_key in st.session_state.deleted_charts:
+        continue  # Ẩn khỏi UI nếu đã xoá
+
     with st.container():
         cols = st.columns([2, 3])
 
@@ -50,6 +77,11 @@ for i, (question, answer, code, timestamp) in enumerate(cards):
             st.markdown(f"💬 **Answer:** {answer}")
             with st.expander("📄 View Code"):
                 st.code(code, language="python")
+
+            if st.button("🗑️ Delete Chart", key=f"del_card_{i}"):
+                delete_chart_card(dataset_id, question, timestamp)
+                st.toast("🗑️ Chart deleted!", icon="✅")
+                st.rerun()  # 
 
         with cols[1]:
             fig = execute_plt_code(code, st.session_state.df)
