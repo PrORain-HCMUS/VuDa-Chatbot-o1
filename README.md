@@ -2,7 +2,7 @@
 
 **Delight-GPT** – A Streamlit-based EDA & AI Chatbot web app for exploratory data analysis and interactive data Q&A. Upload your CSV, explore with charts, generate PDF reports, and ask the AI questions—all in one place!
 
-For detailed architecture and explanations, please watch [architecture and functions walkthrough video on YouTube](https://www.youtube.com/watch?v=1_3ZU6xldEs)).
+For detailed architecture and explanations, please watch [architecture and functions walkthrough video on YouTube](https://www.youtube.com/watch?v=1_3ZU6xldEs).
 
 
 <div align="center">  
