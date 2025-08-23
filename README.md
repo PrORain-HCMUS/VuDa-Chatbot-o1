@@ -1,5 +1,12 @@
 # Delight-GPT (VuDa-Chatbot-o1)
 
+[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.34+-brightgreen)](https://streamlit.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/PrORain-HCMUS/VuDa-Chatbot-o1.svg)](https://github.com/PrORain-HCMUS/VuDa-Chatbot-o1/stargazers)
+[![Issues](https://img.shields.io/github/issues/PrORain-HCMUS/VuDa-Chatbot-o1.svg)](https://github.com/PrORain-HCMUS/VuDa-Chatbot-o1/issues)
+[![YouTube](https://img.shields.io/badge/YouTube-Video-red?logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=1_3ZU6xldEs)
+
 **Delight-GPT** – A Streamlit-based EDA & AI Chatbot web app for exploratory data analysis and interactive data Q&A. Upload your CSV, explore with charts, generate PDF reports, and ask the AI questions—all in one place!
 
 For detailed architecture and explanations, please watch our [video on YouTube](https://www.youtube.com/watch?v=1_3ZU6xldEs).
