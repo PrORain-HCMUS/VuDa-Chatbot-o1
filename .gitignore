@@ -1,1 +1,10 @@
 .env
+2_📈_Interactive_Visualization_Tool.py
+fix_db.py
+src/__pycache__
+questions.txt
+db.sqlite
+50m.ipynb
+app.py
+mydata.duckdb
+temp.txt
