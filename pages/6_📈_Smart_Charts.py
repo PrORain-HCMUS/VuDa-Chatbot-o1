@@ -5,6 +5,7 @@ from src.models.llms import load_llm
 from src.models.config import COLOR_THEME
 from datetime import datetime
 from src.utils import get_all_datasets, get_dataset
+import re
 
 st.set_page_config(page_title="📈 Smart Chart Builder", layout="wide")
 st.title("📈 Smart Chart Builder")
@@ -48,62 +49,101 @@ with sidebar:
     user_prompt = st.text_area("📝 Extra LLM Instructions", placeholder="e.g., add markers, use dark theme...")
     generate = st.button("🚀 Generate & Analyze")
 
+# Placeholders (chỉ 1 lần, không tạo trang mới)
+chart_placeholder = chart_col.container()
+insight_placeholder = llm_col.container()
+
+def _sanitize_plotly_code(code: str) -> str:
+    """Loại bỏ fig.show(), plt.show(), st.plotly_chart(...)"""
+    code = re.sub(r"\b(fig|plt)\.show\(\)\s*;?", "", code)
+    code = re.sub(r"st\.plotly_chart\([^\)]*\)\s*", "", code, flags=re.S)
+    return code
+
 if generate:
     color = group_by if group_by != "None" else None
+    st.session_state["chart_config"] = {
+        "chart_type": chart_type,
+        "x_axis": x_axis,
+        "y_axis": y_axis,
+        "color": color,
+    }
 
-    with chart_col:
-        st.markdown("### 📊 Generated Chart")
-        try:
-            if chart_type == "line":
-                fig = px.line(df, x=x_axis, y=y_axis, color=color)
-            elif chart_type == "bar":
-                fig = px.bar(df, x=x_axis, y=y_axis, color=color)
-            elif chart_type == "scatter":
-                fig = px.scatter(df, x=x_axis, y=y_axis, color=color)
-            else:
-                st.warning("Unsupported chart type.")
-                fig = None
+    # ===== 1) Chart cơ bản ban đầu ở cột 2 =====
+    try:
+        if chart_type == "line":
+            base_fig = px.line(df, x=x_axis, y=y_axis, color=color)
+        elif chart_type == "bar":
+            base_fig = px.bar(df, x=x_axis, y=y_axis, color=color)
+        elif chart_type == "scatter":
+            base_fig = px.scatter(df, x=x_axis, y=y_axis, color=color)
+        else:
+            base_fig = None
 
-            if fig:
-                st.plotly_chart(fig, use_container_width=True)
-        except Exception as e:
-            st.error(f"❌ Error generating chart: {e}")
+        if base_fig:
+            chart_placeholder.markdown("### 📊 Generated / Updated Chart")
+            rev = st.session_state.get("chart_rev", 0) + 1
+            st.session_state["chart_rev"] = rev
+            chart_placeholder.plotly_chart(base_fig, use_container_width=True, key=f"base_chart_{rev}")
+    except Exception as e:
+        chart_placeholder.error(f"❌ Error generating chart: {e}")
 
-    with llm_col:
-        st.markdown("### 🧠 Chart Code & Insights")
-        with st.spinner("Generating chart code and insights..."):
-            prompt = f"""
-                You are a professional data analyst and visualization expert working with Python and pandas.
-                The dataset is preloaded in the DataFrame `df` and contains these columns: {df.columns.tolist()}.
+    # ===== 2) Gọi LLM để lấy code + insights =====
+    with st.spinner("Generating chart code and insights..."):
+        prompt = f"""
+            You are a professional data analyst and visualization expert working with Python and pandas.
+            The dataset is preloaded in the DataFrame `df` and contains these columns: {df.columns.tolist()}.
 
-                The user has just generated a Plotly {chart_type} chart with:
-                - X-axis: `{x_axis}`
-                - Y-axis: `{y_axis}`
-                - Color grouping: `{color}`
-                {f"- Extra request: {user_prompt.strip()}" if user_prompt.strip() else ""}
+            The user has just generated a Plotly {chart_type} chart with:
+            - X-axis: `{x_axis}`
+            - Y-axis: `{y_axis}`
+            - Color grouping: `{color}`
+            {f"- Extra request: {user_prompt.strip()}" if user_prompt.strip() else ""}
 
-                Your tasks:
-                1. **Generate the Plotly Express code only using `df`**, do NOT redefine or reload data.
-                2. **Extract 3 meaningful insights using real values and labels from df**:
-                - Example: "Artist 'Ed Sheeran' has the highest Spotify Popularity (97) and Track Score (420)"
-                - Include comparisons, extremes, or correlations with exact numbers
-                3. **Output 5 statistics (mean, median, min, max, std)** as a **Markdown table**, broken down by `{color}` if applicable
+            Your tasks:
+            1. **Generate the Plotly Express code only using `df`**, do NOT redefine or reload data.
+            2. **Extract 3 meaningful insights using real values and labels from df**:
+            - Example: "Artist 'Ed Sheeran' has the highest Spotify Popularity (97) and Track Score (420)"
+            - Include comparisons, extremes, or correlations with exact numbers
+            - ⚠️ Do NOT use placeholders like "Artist A" or "Group 1" — always use actual names/labels from `df`
+            3. **Output 5 statistics (mean, median, min, max, std)** as a **Markdown table**, broken down by `{color}` if applicable.
 
-                Respond in Markdown with:
-                - A code block for the chart
-                - A bold **Insights:** section with bullet points (no placeholders)
-                - A bold **Statistics:** section rendered as a Markdown table, like:
+            Respond in Markdown with:
+            - A code block for the chart
+            - A bold **Insights:** section with bullet points (no placeholders)
+            - A bold **Statistics:** section rendered as a Markdown table, like:
 
-                | Metric | Group A | Group B | Group C |
-                |--------|---------|---------|---------|
-                | Mean   | 58.2    | 63.1    | 47.9    |
-                | Median | ...     | ...     | ...     |
+            | Metric | Drake | Taylor Swift | The Weeknd |
+            |--------|-------|--------------|------------|
+            | Mean   | 85.2  | 82.1         | 79.5       |
+            | Median | 87.0  | 84.0         | 81.0       |
 
-                ⚠️ Important:
-                - Use **real values and real names** from the dataset
-                - NEVER use placeholders like "Region A" or "Artist B"
-                - Insights must be specific and data-driven
-                """
+            ⚠️ Important:
+            - Use **real values and real names** from the dataset
+            - NEVER use placeholders like "Region A", "Artist B", or "Category C"
+            - Insights must be specific and data-driven
+            """
 
-            result = llm.predict(prompt)
-            st.markdown(result)
+
+        result = llm.predict(prompt)
+
+        # Cột 3: hiển thị code + insights + table từ LLM
+        insight_placeholder.markdown(result)
+
+        # Parse code từ LLM → update chart ở cột 2
+        code_blocks = re.findall(r"```(?:python)?(.*?)```", result, re.S)
+        if code_blocks:
+            raw_code = code_blocks[0].strip()
+            code_to_run = _sanitize_plotly_code(raw_code)
+
+            try:
+                local_vars = {"df": df, "px": px}
+                exec(code_to_run, {}, local_vars)
+
+                if "fig" in local_vars and local_vars["fig"] is not None:
+                    chart_placeholder.markdown("### 📊 Generated / Updated Chart")
+                    rev = st.session_state.get("chart_rev", 0) + 1
+                    st.session_state["chart_rev"] = rev
+                    chart_placeholder.plotly_chart(local_vars["fig"], use_container_width=True, key=f"llm_chart_{rev}")
+                    chart_placeholder.code(code_to_run, language="python")
+            except Exception as e:
+                insight_placeholder.error(f"⚠️ Error executing LLM code: {e}")
