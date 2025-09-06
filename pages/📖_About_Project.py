@@ -6,7 +6,7 @@ st.set_page_config(page_title="📖 About Project", layout="wide")
 st.title("📖 About This Project")
 
 st.markdown("""
-Welcome to **Delight-GPT** — a smart, LLM-powered data analysis platform built for intuitive EDA and visualization.
+Welcome to **VuDa-GPT** — a smart, LLM-powered data analysis platform built for intuitive EDA and visualization.
 
 
 ### 🚀 Features
@@ -48,7 +48,7 @@ This project was created to:
 ---
 
 ### 👨‍💻 Contributing
-Made with ❤️ by Delay group.
+Made with ❤️ by PrORain-HCMUS.
 """, unsafe_allow_html=True)
 
 with st.sidebar:
