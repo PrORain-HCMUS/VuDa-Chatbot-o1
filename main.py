@@ -45,7 +45,7 @@ st.markdown(
         VuDa-GPT
       </h1>
       <div style="color:#dbe8ff;opacity:.95;font-size:15px;">
-        AI-based Data analysis assistant with chatbot, visualization, and report auto-creation.
+        AI-based Data analysis assistant with chatbot, visualization, and automatic report-creator.
       </div>
     </div>
     """,
