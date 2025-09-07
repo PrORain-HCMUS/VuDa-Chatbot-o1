@@ -1,3 +1,10 @@
+# ==========================================================================================
+# 📊 Smart Chart Builder - Tính năng các cột:
+# - Sidebar (Cột 1): Chọn dataset, cấu hình trục X/Y, nhóm màu, loại biểu đồ, nhập yêu cầu thêm cho LLM, nút sinh biểu đồ.
+# - Chart (Cột 2): Hiển thị biểu đồ Plotly cơ bản và biểu đồ nâng cao do LLM sinh ra.
+# - Insights (Cột 3): Hiển thị code vẽ biểu đồ, các insights phân tích dữ liệu và bảng thống kê do LLM sinh ra.
+# ==========================================================================================
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
