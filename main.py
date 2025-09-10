@@ -1,3 +1,14 @@
+# ==========================================================================================
+# 📂 Main - Update Log:
+# - Thêm kiểm tra và tạo thư mục uploads nếu chưa tồn tại
+# - Thêm safe_read_csv để đọc file với nhiều encoding
+# - Ngăn upload trùng lặp và freeze trình duyệt bằng session_state
+# - Thêm smart_patch_code và enhance_prompt để tự động chỉnh sửa code và prompt cho phù hợp dữ liệu
+# - Hỗ trợ quản lý, đổi tên, xóa chat session và tin nhắn
+# - Hiển thị lịch sử chat, cho phép chỉnh sửa, xóa, copy từng message
+# - Tích hợp tự động lưu biểu đồ vào Visual Summary
+# ==========================================================================================
+
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
