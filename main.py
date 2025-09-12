@@ -1,5 +1,5 @@
 # ==========================================================================================
-# 📂 Main - Update Log:
+# 📂 Main
 # - Thêm kiểm tra và tạo thư mục uploads nếu chưa tồn tại
 # - Thêm safe_read_csv để đọc file với nhiều encoding
 # - Ngăn upload trùng lặp và freeze trình duyệt bằng session_state
@@ -7,6 +7,10 @@
 # - Hỗ trợ quản lý, đổi tên, xóa chat session và tin nhắn
 # - Hiển thị lịch sử chat, cho phép chỉnh sửa, xóa, copy từng message
 # - Tích hợp tự động lưu biểu đồ vào Visual Summary
+# ==========================================================================================
+# Update Log (12.09.2025):
+# - Fix hàm smart_patch_code để tự động chỉnh sửa code biểu đồ do LLM sinh ra cho phù hợp với dữ liệu thực tế
+# - Thêm badges, css injections (đã remove vào src.utils)
 # ==========================================================================================
 
 import streamlit as st
@@ -27,21 +31,10 @@ from src.utils import (
     execute_plt_code,
     delete_chat_message,
     delete_chat_session,
-    rename_chat_session
+    rename_chat_session, 
+    inject_cards_css
 )
 
-
-def inject_cards_css():
-    st.markdown("""
-    <style>
-    :root{
-      --card-bg:#11151c; --card-bg-2:#0c0f14; --card-border:#1f2430;
-      --accent:#5ad7ff; --good:#28c07a; --bad:#ff5d73; --muted:#8b94a7;
-    }
-    .block-container{max-width:1400px;padding-top:1.1rem;padding-bottom:1.6rem;}
-    ...
-    </style>
-    """, unsafe_allow_html=True)
 
 
 st.set_page_config(page_title="🧠 VuDa-GPT", layout="wide")
