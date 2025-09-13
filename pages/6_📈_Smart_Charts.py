@@ -1,9 +1,15 @@
-# ==========================================================================================
-# 📊 Smart Chart Builder - Tính năng các cột:
+# ==========================================================================================================================
+# 📊 Smart Chart Builder
 # - Sidebar (Cột 1): Chọn dataset, cấu hình trục X/Y, nhóm màu, loại biểu đồ, nhập yêu cầu thêm cho LLM, nút sinh biểu đồ.
 # - Chart (Cột 2): Hiển thị biểu đồ Plotly cơ bản và biểu đồ nâng cao do LLM sinh ra.
 # - Insights (Cột 3): Hiển thị code vẽ biểu đồ, các insights phân tích dữ liệu và bảng thống kê do LLM sinh ra.
-# ==========================================================================================
+# ==========================================================================================================================
+#   Update Log (13.09.2025):
+# - Fix lỗi reload trang khi tạo chart mới từ phần add instructions bằng cách thêm Placeholders chỉ 1 lần
+# - Cải thiện prompt để LLM luôn sử dụng tên/thông tin thực tế từ dataset, không dùng placeholder
+# - Thêm hàm _sanitize_plotly_code để loại bỏ fig.show(), plt.show
+# - Thêm phần chart sau khi modify bằng instructions bên dưới chart ban đầu
+# ==========================================================================================================================
 
 import streamlit as st
 import pandas as pd
@@ -11,11 +17,31 @@ import plotly.express as px
 from src.models.llms import load_llm
 from src.models.config import COLOR_THEME
 from datetime import datetime
-from src.utils import get_all_datasets, get_dataset
+from src.utils import (
+    get_all_datasets, 
+    get_dataset, 
+    inject_cards_css
+)
 import re
 
 st.set_page_config(page_title="📈 Smart Chart Builder", layout="wide")
-st.title("📈 Smart Chart Builder")
+# st.title("📈 Smart Chart Builder")
+inject_cards_css()
+st.markdown(
+    """
+    <div style="background:linear-gradient(90deg,#1f6feb,#2ea043);
+                border-radius:16px;padding:18px 22px;margin-bottom:12px;">
+      <h1 style="margin:0;color:white;font-weight:800;letter-spacing:.3px;">
+        📈 Smart Chart Builder
+      </h1>
+      <div style="color:#dbe8ff;opacity:.95;font-size:15px;">
+        Create and analyze charts with AI-powered insights. 
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 llm = load_llm("gpt-3.5-turbo")
 
