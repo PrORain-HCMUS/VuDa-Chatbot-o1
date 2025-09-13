@@ -425,3 +425,16 @@ def export_eda_report_to_pdf(eda_sections, df, summary_response, dataset_name):
         pass
 
     return pdf_bytes
+
+
+def inject_cards_css():
+    st.markdown("""
+    <style>
+    :root{
+      --card-bg:#11151c; --card-bg-2:#0c0f14; --card-border:#1f2430;
+      --accent:#5ad7ff; --good:#28c07a; --bad:#ff5d73; --muted:#8b94a7;
+    }
+    .block-container{max-width:1400px;padding-top:1.1rem;padding-bottom:1.6rem;}
+    ...
+    </style>
+    """, unsafe_allow_html=True)
