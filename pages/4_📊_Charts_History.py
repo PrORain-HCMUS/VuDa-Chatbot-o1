@@ -1,12 +1,47 @@
-# File: pages/4_📊_Visual_Summary.py
+# ==========================================================================================================================
+# 📊 Charts History
+# - Hiển thị lịch sử các biểu đồ đã tạo, kèm code, insights và thời gian tạo
+# - Cho phép xem lại, xóa từng biểu đồ mà không cần reload trang
+# - Tích hợp preview code, kết quả biểu đồ và nội dung trả lời từ LLM
+# - Hỗ trợ quản lý biểu đồ theo từng dataset, giúp người dùng dễ dàng tra cứu lại
+# ==========================================================================================================================
+#   Update Log (13.09.2025):
+# - Chỉ thêm placeholder 1 lần để tránh reload trang khi xóa biểu đồ, thêm css-injected cards
+# ==========================================================================================================================
+
+
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from src.utils import init_db, get_all_datasets, get_chart_cards_by_dataset, get_dataset, safe_read_csv, execute_plt_code, delete_chart_card
+from src.utils import (
+    init_db, 
+    get_all_datasets, 
+    get_chart_cards_by_dataset, 
+    get_dataset, 
+    safe_read_csv, 
+    execute_plt_code, 
+    delete_chart_card,
+    inject_cards_css
+)
 
 
 st.set_page_config(page_title="📊 Visual Summary", layout="wide")
-st.title("📊 Charts History")
+# st.title("📊 Charts History")
+inject_cards_css()
+st.markdown(
+    """
+    <div style="background:linear-gradient(90deg,#1f6feb,#2ea043);
+                border-radius:16px;padding:18px 22px;margin-bottom:12px;">
+      <h1 style="margin:0;color:white;font-weight:800;letter-spacing:.3px;">
+        📊 Charts History
+      </h1>
+      <div style="color:#dbe8ff;opacity:.95;font-size:15px;">
+        Review and manage your chart-based codes, insights.
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Initialize database
 init_db()
